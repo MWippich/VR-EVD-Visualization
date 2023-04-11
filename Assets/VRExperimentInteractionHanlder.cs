@@ -2,11 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class VRExperimentInteractionHanlder : ExperimentInteractionHandler
 {
 
     public Transform markerPosition;
+    public XRRayInteractor rayInteractor;
 
     [SerializeField] private InputActionReference placeMarker = null;
 
@@ -27,6 +29,15 @@ public class VRExperimentInteractionHanlder : ExperimentInteractionHandler
         ToggleTransparency();
     }
 
+    public override void Restart()
+    {
+        if (!transparencyEnabled)
+        {
+            ToggleTransparency();
+        }
+        base.Restart();
+    }
+
     private void Update()
     {
         if (transparencyEnabled)
@@ -38,6 +49,11 @@ public class VRExperimentInteractionHanlder : ExperimentInteractionHandler
 
     private void Place(InputAction.CallbackContext context)
     {
-        ToggleTransparency();
+        if (!rayInteractor.IsOverUIGameObject())
+        {
+            ToggleTransparency();
+            markerPlaced.Invoke(!transparencyEnabled);
+        }
+            
     }
 }

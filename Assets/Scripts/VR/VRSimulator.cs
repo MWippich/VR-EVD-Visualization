@@ -47,9 +47,9 @@ public class VRSimulator : BaseSimulator
         scrolling.action.performed -= OnScrolling;
     }
 
-
-    override protected void handleInput()
+    new private void FixedUpdate()
     {
+        base.FixedUpdate();
         if (fastForward && index < maxFileSize - 1)
         {
             foreach (Data data in dataList)
@@ -60,7 +60,6 @@ public class VRSimulator : BaseSimulator
             index++;
         }
 
-        // Right arrow key plays the animation forward in time
         if (fastBackward && index > 0)
         {
             foreach (Data data in dataList)
@@ -70,7 +69,11 @@ public class VRSimulator : BaseSimulator
             }
             index--;
         }
+    }
 
+    override protected void handleInput()
+    {
+        
         if (restartPlayback.action.triggered && restartTimer < 0f)
         {
             // Reset timer

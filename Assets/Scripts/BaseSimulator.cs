@@ -645,7 +645,7 @@ public class BaseSimulator : MonoBehaviour
     }
 
     // Update is called once per frame
-    void FixedUpdate()
+    protected void FixedUpdate()
     {
         timer += Time.deltaTime;
 

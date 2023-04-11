@@ -8,6 +8,7 @@ public class ExperimentHandler : MonoBehaviour
     [Header("Experiment Variables")]
     public List<string> trajectoryPaths;
     public bool useDensityTask, usePOITask, useAngleTask;
+    public bool doneDoublePress = false;
 
     [Header("Setup")]
     public ConfidenceMenu confidenceMenu;
@@ -15,7 +16,7 @@ public class ExperimentHandler : MonoBehaviour
     public ExperimentInteractionHandler interactionHandler;
     public VRNavigation VRNavigator;
     public ObserverMovement desktopNavigatior;
-    public Canvas startMenu;
+    public Canvas startMenu, doneMenu;
     public Button startButton, doneButton;
 
     private bool inStartMenu = true;
@@ -23,9 +24,25 @@ public class ExperimentHandler : MonoBehaviour
     private int currentSimulation = -1;
 
     private float currentTrialTime = .0f;
+    private float doneTimer = -1f;
 
     private void Start()
     {
+
+        if(doneMenu != null)
+        {
+            doneMenu.gameObject.SetActive(false);
+        }
+
+        interactionHandler.HideMarker();
+
+
+        doneButton.interactable = false;
+        interactionHandler.markerPlaced.AddListener(delegate
+        (bool placed) {
+            doneButton.interactable = placed;
+        });
+
         confidenceMenu.gameObject.SetActive(false);
         startMenu.gameObject.SetActive(true);
         startButton.onClick.AddListener(() => {
@@ -49,15 +66,19 @@ public class ExperimentHandler : MonoBehaviour
     private void StartTrial()
     {
         currentSimulation++;
-
         interactionHandler.Restart();
         if(VRNavigator != null)
         {
             VRNavigator.Restart();
+            VRNavigator.SetBlockMovement(false);
         }
         if (desktopNavigatior != null)
         {
             desktopNavigatior.Restart();
+        }
+        if (doneMenu != null)
+        {
+            doneMenu.gameObject.SetActive(true);
         }
 
         inConfidenceMenu = false;
@@ -69,8 +90,35 @@ public class ExperimentHandler : MonoBehaviour
 
     private void RateConfidence()
     {
+        if (doneDoublePress)
+        {
+            float timeSincePress = Time.unscaledTime - doneTimer;
+            if (timeSincePress > 1f)
+            {
+                Debug.Log("return");
+                Debug.Log(timeSincePress);
+                doneTimer = Time.unscaledTime;
+                return;
+            }
+        }
+
+        interactionHandler.HideMarker();
         inConfidenceMenu = true;
         confidenceMenu.gameObject.SetActive(true);
+        if (doneMenu != null)
+        {
+            doneMenu.gameObject.SetActive(false);
+        }
 
+        if (VRNavigator != null)
+        {
+            VRNavigator.Restart();
+            VRNavigator.SetBlockMovement(true);
+        }
+
+        if (desktopNavigatior != null)
+        {
+            desktopNavigatior.Restart();
+        }
     }
 }

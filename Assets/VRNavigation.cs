@@ -15,7 +15,9 @@ public class VRNavigation : MonoBehaviour
     public GameObject leftHand;
     public Camera cam;
     public Transform initialPosition;
+    public float initialScale = 0.25f;
 
+    private bool blockFly = false;
     public float flySpeed = 0.1f;
     public float scaleSpeed = 0.1f;
     public float scalePosOffsetSpeed = 0.1f;
@@ -43,9 +45,14 @@ public class VRNavigation : MonoBehaviour
         RGrab.action.canceled -= RightGrab;
     }
 
+    public void SetBlockMovement(bool block)
+    {
+        blockFly = block;
+    }
+
     public void Restart()
     {
-
+        ResetView();
     }
 
     private void Start()
@@ -55,10 +62,12 @@ public class VRNavigation : MonoBehaviour
 
     private void Update()
     {
-        float flyValue = fly.action.ReadValue<float>();
-        float negativeFlyValue = flyBackwards.action.ReadValue<float>();
-        Vector3 flyVelocity = flySpeed * (flyValue - negativeFlyValue) * (rightHand.transform.rotation * Vector3.forward);
-        transform.position += flyVelocity;
+        if (!blockFly) {
+            float flyValue = fly.action.ReadValue<float>();
+            float negativeFlyValue = flyBackwards.action.ReadValue<float>();
+            Vector3 flyVelocity = 60 * Time.deltaTime * flySpeed * (flyValue - negativeFlyValue) * (rightHand.transform.rotation * Vector3.forward);
+            transform.position += flyVelocity;
+        }
 
         if (resetView.action.triggered && resetTimer < 0f)
         {

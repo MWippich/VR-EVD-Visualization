@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public abstract class ExperimentInteractionHandler : MonoBehaviour
 {
+    public UnityEvent<bool> markerPlaced;
 
     public Material transparentMat;
     public Material solidMat;
@@ -29,9 +31,14 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
         }
     }
 
-    public void Restart()
+    public void HideMarker()
     {
-        
+        marker.SetActive(false);
+    }
+
+    public virtual void Restart()
+    {
+        marker.SetActive(true);
     }
 
     protected void markerTransparent()
