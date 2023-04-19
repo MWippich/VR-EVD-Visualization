@@ -10,6 +10,7 @@ using UnityEngine.SceneManagement;
 using UnityEditor;
 using UnityVolumeRendering;
 using TMPro;
+using UnityEngine.Events;
 
 using static VoxelGrid;
 
@@ -21,6 +22,69 @@ using static VoxelGrid;
 */
 public class BaseSimulator : MonoBehaviour
 {
+    [Serializable]
+    public class GroundTruth
+    {
+        const string savePath = "/GroundTruth.json";
+
+        public List<string> trajectories = new List<string>();
+        public List<Quaternion> angleGT = new List<Quaternion>();
+        public List<Vector3> densityGT = new List<Vector3>();
+        public List<Vector3> POIGT = new List<Vector3>();
+
+        public void save()
+        {
+            string data = JsonUtility.ToJson(this);
+            System.IO.File.WriteAllText(Application.dataPath + savePath, data);
+            Debug.Log(data);
+        }
+
+        public static GroundTruth load()
+        {
+            string text = File.ReadAllText(Application.dataPath + savePath);
+            Debug.Log(text);
+            GroundTruth gt = JsonUtility.FromJson<GroundTruth>(text);
+            Debug.Log(JsonUtility.ToJson(gt));
+            return gt;
+        }
+
+        public void setDensityGT(string trajectory, Vector3 pos)
+        {
+            int i = trajectories.IndexOf(trajectory);
+            if (i != -1)
+            {
+                densityGT[i] = pos;
+            } else
+            {
+                densityGT.Add(pos);
+                angleGT.Add(Quaternion.identity);
+                POIGT.Add(Vector3.zero);
+            }
+
+        }
+
+        public Quaternion getAngleGT(string trajectory)
+        {
+            int i = trajectories.IndexOf(trajectory);
+            if (i != -1 && angleGT[i] != Quaternion.identity)
+            {
+                return angleGT[i];
+            }
+            Debug.LogWarning("No angle Ground Truth for trajectory " + trajectory);
+            return Quaternion.identity;
+        }
+        public Vector3 getDensityGT(string trajectory)
+        {
+            int i = trajectories.IndexOf(trajectory);
+            if (i != -1 && densityGT[i] != Vector3.zero)
+            {
+                return densityGT[i];
+            }
+            Debug.LogWarning("No density Ground Truth for trajectory " + trajectory);
+            return Vector3.zero;
+        }
+    }
+
     protected  class Data
     {
         // The path to the tsv file the data was loaded from
@@ -82,6 +146,14 @@ public class BaseSimulator : MonoBehaviour
         ANGLE,
         POI,
     }
+    public enum VIZ
+    {
+        NONE,
+        TRAIL,
+        DENSITY,
+    }
+
+    public UnityEvent simulationStarted;
 
     [Header("Reference Markers Prefab")]
     public GameObject markers;
@@ -188,13 +260,30 @@ public class BaseSimulator : MonoBehaviour
         {"catheter007", new Vector3(0.007f, 0.866f, -0.252f)} 
         };
 
+    private Dictionary<string, int> anglePivotFrameIndex = new Dictionary<string, int>
+    {
+        { "trajectory003", 125 },
+    };
+
+    public GroundTruth groundTruth;
+
     protected virtual void init()
     {
         // Should be overriden if a specific implementation needs to initialise something
     }
 
-    public void StartSimulation(String[] paths)
+    public void StartSimulation(String[] paths, TASK task, VIZ visualization)
     {
+        applyPathTrace = false;
+        applySpaceTimeDensity = false;
+        if(visualization == VIZ.TRAIL)
+            applyPathTrace = true;
+        else if(visualization == VIZ.DENSITY)
+            applySpaceTimeDensity = true;
+
+        this.task = task;
+
+
         if (dataList != null)
         {
             foreach (Data data in dataList)
@@ -248,11 +337,14 @@ public class BaseSimulator : MonoBehaviour
             calculateSpaceTimeDensity(dataList);
             visualizeDensity();
         }
+
+        simulationStarted.Invoke();
     }
 
     // Start is called before the first frame update
     void Start()
     {
+        groundTruth = GroundTruth.load();
 
         groundTruthMarker.SetActive(showGroundTruth);
 
@@ -270,8 +362,6 @@ public class BaseSimulator : MonoBehaviour
         rewind = false;
 
         init();
-
-        
     }
 
     protected virtual void handleInput()
@@ -469,16 +559,17 @@ public class BaseSimulator : MonoBehaviour
 
 
         groundTruthMarker.transform.position = highestDensityPoses[0];
+        data.tipHighestDensityPos = highestDensityPoses[0];
 
     }
 
     protected void calculateSpaceTimeDensity(List<Data> dataList)
     {
-        Debug.Log("Calculating space time density");
+        //Debug.Log("Calculating space time density");
         voxelGrid = new VoxelGrid(voxelsPerDim + 2, gridLength); // Set all voxels in the result to have 0 density
         VoxelGrid trajectoryDensity = new VoxelGrid(voxelsPerDim + 2, gridLength); // Create a temporary grid with all densities initialized to 0
 
-        float center = gridLength / 2.0f; // We the origin of the data to be at the center of our cube
+        //float center = gridLength / 2.0f; // We the origin of the data to be at the center of our cube
 
         const float deltaTime = 1.0f / 20.0f;
         const float voxelVol = 1f;
@@ -499,16 +590,16 @@ public class BaseSimulator : MonoBehaviour
                 Vector3Int va = getVoxelIndexAtPosition(scaledPoint, gridLength / (float) voxelsPerDim);
                 va = Vector3Int.Max(va, Vector3Int.zero);
                
-                trajectoryDensity.voxels[va.x + 1, va.y + 1, va.z + 1].density += deltaTime / voxelVol;
+                trajectoryDensity.voxels[va.x + 1, va.y + 1, va.z + 1].density += 1f;
             }
             voxelGrid.add(trajectoryDensity);
         }
         
-        voxelGrid.normalizeDensities(dataList.Count); // Normalize by the number of trajectories to get values between 0 and 1
+        //voxelGrid.normalizeDensities(dataList.Count); // Normalize by the number of trajectories to get values between 0 and 1
         // Debug.Log("About to print grid!");
         //voxelGrid.print();
         
-        Debug.Log("Done calculating the space time density!");
+        //Debug.Log("Done calculating the space time density!");
     }
 
     private Vector3Int getVoxelIndexAtPosition(Vector3 pos, float voxelSideLength)

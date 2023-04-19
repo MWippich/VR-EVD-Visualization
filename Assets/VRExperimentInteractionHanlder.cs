@@ -24,9 +24,8 @@ public class VRExperimentInteractionHanlder : ExperimentInteractionHandler
 
     private void Start()
     {
-        marker.SetActive(viewSphere);
         marker.transform.localScale = new Vector3(markerSize, markerSize, markerSize);
-        ToggleTransparency();
+        markerTransparent();
     }
 
     public override void Restart()

@@ -13,22 +13,51 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
     protected bool transparencyEnabled;
 
     public bool viewSphere = true;
+    public BaseSimulator.TASK currentTask = BaseSimulator.TASK.DENSITY;
 
     public GameObject marker;
+
+    public GameObject sphereMarker;
+    public GameObject posMarker;
+    public GameObject angleMarker;
     public float markerSize = 0.01f;
+
     protected void ToggleTransparency()
     {
         if (!transparencyEnabled)
         {
             markerTransparent();
-            transparencyEnabled = true;
         }
         else if (transparencyEnabled)
         {
             markerSolid();
-            transparencyEnabled = false;
 
         }
+    }
+
+    public void SetTask(BaseSimulator.TASK task)
+    {
+        currentTask = task;
+        sphereMarker.SetActive(false);
+        posMarker.SetActive(false);
+        //angleMarker.SetActive(false);
+        switch (task)
+        {
+            case BaseSimulator.TASK.DENSITY:
+                marker = sphereMarker;
+                break;
+            case BaseSimulator.TASK.POI:
+                marker = posMarker;
+                break;
+            case BaseSimulator.TASK.ANGLE:
+                marker = angleMarker;
+                break;
+            default:
+                marker = sphereMarker;
+                break;
+        }
+        marker.SetActive(true);
+        markerTransparent();
     }
 
     public void HideMarker()
@@ -38,17 +67,38 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
 
     public virtual void Restart()
     {
-        marker.SetActive(true);
+        marker.SetActive(viewSphere);
     }
 
     protected void markerTransparent()
     {
-        Renderer skullRenderer = marker.GetComponent<Renderer>();
-        skullRenderer.material = transparentMat;
+        transparencyEnabled = true;
+        if (currentTask == BaseSimulator.TASK.DENSITY)
+        {
+            Renderer skullRenderer = marker.GetComponent<Renderer>();
+            skullRenderer.material = transparentMat;
+        } else if(currentTask == BaseSimulator.TASK.POI)
+        {
+            foreach (Renderer r in marker.GetComponentsInChildren<Renderer>())
+            {
+                r.material = transparentMat;
+            }
+        }
     }
     protected void markerSolid()
     {
-        Renderer skullRenderer = marker.GetComponent<Renderer>();
-        skullRenderer.material = solidMat;
+        transparencyEnabled = false;
+        if (currentTask == BaseSimulator.TASK.DENSITY)
+        {
+            Renderer skullRenderer = marker.GetComponent<Renderer>();
+            skullRenderer.material = solidMat;
+        }
+        else if (currentTask == BaseSimulator.TASK.POI)
+        {
+            foreach (Renderer r in marker.GetComponentsInChildren<Renderer>())
+            {
+                r.material = solidMat;
+            }
+        }
     }
 }

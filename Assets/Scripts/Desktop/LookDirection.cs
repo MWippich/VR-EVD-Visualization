@@ -26,11 +26,10 @@ public class LookDirection : ExperimentInteractionHandler
   
     void Start()
     {
-        marker.SetActive(viewSphere);
         resetButton.onClick.AddListener(ResetView);
         marker.transform.position = this.transform.position + transform.rotation * Vector3.forward * markerDist;
         marker.transform.localScale = new Vector3(markerSize, markerSize, markerSize);
-        ToggleTransparency();
+        markerTransparent();
         rot = initialTransform.eulerAngles;
     }
 
@@ -43,8 +42,8 @@ public class LookDirection : ExperimentInteractionHandler
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
             // mouse input
-            float mouseX = Input.GetAxisRaw("Mouse X") * Time.smoothDeltaTime * xSens;
-            float mouseY = Input.GetAxisRaw("Mouse Y") * Time.smoothDeltaTime * ySens;
+            float mouseX = Input.GetAxisRaw("Mouse X") * xSens * 0.01f;
+            float mouseY = Input.GetAxisRaw("Mouse Y") * ySens * 0.01f;
 
             rot.x -= mouseY;
             rot.y += mouseX;
@@ -70,6 +69,15 @@ public class LookDirection : ExperimentInteractionHandler
                 transparencyEnabled = false;
             }
             ToggleTransparency();
+            markerPlaced.Invoke(!transparencyEnabled);
+            if (transparencyEnabled)
+            {
+                //set marker dist to current distance
+
+
+                markerDist = Mathf.Clamp(markerDist, 0.015f, 0.1f);
+            }
+            
         }
 
         if (transparencyEnabled)
@@ -84,10 +92,7 @@ public class LookDirection : ExperimentInteractionHandler
         }
 
         markerDist += Input.mouseScrollDelta.y * scrollSpeed;
-        if (markerDist < 0.015f)
-        {
-            markerDist = 0.015f;
-        }
+        markerDist = Mathf.Clamp(markerDist, 0.015f, 0.1f);
 
         if (Input.GetKey(KeyCode.Return))
         {

@@ -49,6 +49,36 @@ public class Simulator : BaseSimulator
             ChangeDirection();
         }
 
+        
+
+        /*
+        // Left arrow key decreases the cut of value of the visibility window
+        if (Input.GetKey(KeyCode.LeftArrow) && applySpaceTimeDensity)
+        {
+            Vector2 visWindow = volObjScript.GetVisibilityWindow();
+            visWindow.x -= densityVisSpeed * Time.deltaTime;
+            if (visWindow.x < 0.0f) visWindow.x = 0;
+            volObjScript.SetVisibilityWindow(visWindow);
+        }
+        // Right arrow key increases the cut of value of the visibility window
+        else if (Input.GetKey(KeyCode.RightArrow) && applySpaceTimeDensity)
+        {
+            Vector2 visWindow = volObjScript.GetVisibilityWindow();
+            visWindow.x += densityVisSpeed * Time.deltaTime;
+            if (visWindow.x > visWindow.y) visWindow.x = visWindow.y;
+            volObjScript.SetVisibilityWindow(visWindow);
+        }*/
+
+        // T key restarts scene
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            RestartScene(); // restart the scene 
+        }
+    }
+
+    new private void FixedUpdate()
+    {
+        base.FixedUpdate();
         // Right arrow key plays the animation forward in time
         if ((Input.GetKey(KeyCode.RightArrow) || fastForward) && index < maxFileSize - 1)
         {
@@ -79,29 +109,6 @@ public class Simulator : BaseSimulator
                 FrameStuff[0].text = "Frame: " + index + " / " + maxFileSize;
             }
         }
-
-        /*
-        // Left arrow key decreases the cut of value of the visibility window
-        if (Input.GetKey(KeyCode.LeftArrow) && applySpaceTimeDensity)
-        {
-            Vector2 visWindow = volObjScript.GetVisibilityWindow();
-            visWindow.x -= densityVisSpeed * Time.deltaTime;
-            if (visWindow.x < 0.0f) visWindow.x = 0;
-            volObjScript.SetVisibilityWindow(visWindow);
-        }
-        // Right arrow key increases the cut of value of the visibility window
-        else if (Input.GetKey(KeyCode.RightArrow) && applySpaceTimeDensity)
-        {
-            Vector2 visWindow = volObjScript.GetVisibilityWindow();
-            visWindow.x += densityVisSpeed * Time.deltaTime;
-            if (visWindow.x > visWindow.y) visWindow.x = visWindow.y;
-            volObjScript.SetVisibilityWindow(visWindow);
-        }*/
-
-        // T key restarts scene
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            RestartScene(); // restart the scene 
-        }
     }
+
 }

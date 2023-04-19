@@ -23,7 +23,7 @@ public class DesktopConfidenceMenu : ConfidenceMenu
 
     IEnumerator EnableButtonDelay()
     {
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(2);
 
         continueButton.interactable = true;
     }
