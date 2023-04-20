@@ -35,6 +35,11 @@ public class LookDirection : ExperimentInteractionHandler
 
     void Update()
     {
+        if (drawPositionHelpers)
+        {
+            DrawHelper();
+        }
+
         //RIGHTMOUSEBUTTON
         if (Input.GetMouseButton(1))
         {
