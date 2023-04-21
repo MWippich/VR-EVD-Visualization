@@ -23,7 +23,9 @@ public class LookDirection : ExperimentInteractionHandler
     public GameObject cameraLineEnd;
     public Transform initialTransform;
     public Button resetButton;
-  
+    
+    private Vector3 prevMousePos;
+
     void Start()
     {
         resetButton.onClick.AddListener(ResetView);
@@ -38,7 +40,6 @@ public class LookDirection : ExperimentInteractionHandler
         //RIGHTMOUSEBUTTON
         if (Input.GetMouseButton(1))
         {
-
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
             // mouse input
@@ -61,51 +62,78 @@ public class LookDirection : ExperimentInteractionHandler
             Cursor.lockState = CursorLockMode.None;
         }
 
-
-        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        if (currentTask != BaseSimulator.TASK.ANGLE)
         {
-            if (!marker.activeSelf)
+            if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() && !Input.GetKey(KeyCode.LeftControl))
             {
-                transparencyEnabled = false;
+                if (!marker.activeSelf)
+                {
+                    transparencyEnabled = false;
+                }
+                ToggleTransparency();
+                markerPlaced.Invoke(!transparencyEnabled);
+                if (transparencyEnabled)
+                {
+                    //set marker dist to current distance
+
+
+                    markerDist = Mathf.Clamp(markerDist, 0.015f, 0.1f);
+                }
             }
-            ToggleTransparency();
-            markerPlaced.Invoke(!transparencyEnabled);
+            else if (!transparencyEnabled && Input.GetKey(KeyCode.LeftControl))
+            {
+
+                if (Input.GetMouseButton(0) && !EventSystem.current.IsPointerOverGameObject())
+                {
+                    Vector3 mousePos = Input.mousePosition;
+                    Vector3 prevPos = prevMousePos;
+                    mousePos.z = 1;
+                    prevPos.z = 1;
+
+                    Vector3 mousePosDelta = GetComponent<Camera>().ScreenToWorldPoint(mousePos)
+                        - GetComponent<Camera>().ScreenToWorldPoint(prevPos);
+
+                    marker.transform.position += mousePosDelta * Time.deltaTime;
+                }
+                if (Input.mouseScrollDelta.y != 0)
+                {
+                    marker.transform.position += Input.mouseScrollDelta.y * GetComponent<Camera>().transform.forward * 0.001f;
+                }
+            }
+
             if (transparencyEnabled)
             {
-                //set marker dist to current distance
-
-
-                markerDist = Mathf.Clamp(markerDist, 0.015f, 0.1f);
+                marker.transform.position = this.transform.position + transform.rotation * Vector3.forward * markerDist;
             }
-            
-        }
 
-        if (transparencyEnabled)
+            var scrollSpeed = 0.001f;
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                scrollSpeed *= 2;
+            }
+
+            markerDist += Input.mouseScrollDelta.y * scrollSpeed;
+            markerDist = Mathf.Clamp(markerDist, 0.015f, 0.1f);
+
+            if (transparencyEnabled)
+            {
+                Vector3 mousePos = Input.mousePosition;
+                mousePos.z = markerDist;
+
+                marker.transform.position = GetComponent<Camera>().ScreenToWorldPoint(mousePos);
+            }
+        } else
         {
-            marker.transform.position = this.transform.position + transform.rotation * Vector3.forward * markerDist;
+            // Angle Task
+
+
         }
-
-        var scrollSpeed = 0.001f;
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            scrollSpeed *= 2;
-        }
-
-        markerDist += Input.mouseScrollDelta.y * scrollSpeed;
-        markerDist = Mathf.Clamp(markerDist, 0.015f, 0.1f);
-
         if (Input.GetKey(KeyCode.Return))
         {
             ResetView();
         }
 
-        if (transparencyEnabled)
-        {
-            Vector3 mousePos = Input.mousePosition;
-            mousePos.z = markerDist;
-
-            marker.transform.position = GetComponent<Camera>().ScreenToWorldPoint(mousePos);
-        }
+        prevMousePos = Input.mousePosition;
     }
 
     private void ResetView()

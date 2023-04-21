@@ -29,7 +29,7 @@ public class ExperimentHandler : MonoBehaviour
     private int currentSimulation = -1;
 
     private float currentTrialTime = .0f;
-    private float doneTimer = -1f;
+    private float doneTimer = -1f; //Used for timing double click
 
     private string currTrajectory;
     private BaseSimulator.TASK currTask = BaseSimulator.TASK.POI;
@@ -109,7 +109,11 @@ public class ExperimentHandler : MonoBehaviour
         });
                
         doneButton.onClick.AddListener(RateConfidence);
-        confidenceMenu.OnContinue.AddListener(delegate {
+        confidenceMenu.OnContinue.AddListener(delegate (int confidence) {
+
+            Debug.Log("Trial time: " + currentTrialTime);
+            Debug.Log("Trial confidence: " + confidence);
+
             StartTrial();
         });
     }
@@ -128,8 +132,6 @@ public class ExperimentHandler : MonoBehaviour
         int trajVizIndex = i % trajVizCombos.Count;
         currVisualization = trajVizCombos[trajVizIndex].Item1;
         currTrajectory = trajVizCombos[trajVizIndex].Item2;
-
-
     }
 
     private void StartTrial()
@@ -173,6 +175,8 @@ public class ExperimentHandler : MonoBehaviour
         {
             description.text = descriptions[currTask];
         }
+
+        currentTrialTime = Time.unscaledTime;
     }
 
     private void RateConfidence()
@@ -182,12 +186,13 @@ public class ExperimentHandler : MonoBehaviour
             float timeSincePress = Time.unscaledTime - doneTimer;
             if (timeSincePress > 1f)
             {
-                Debug.Log("return");
-                Debug.Log(timeSincePress);
                 doneTimer = Time.unscaledTime;
                 return;
             }
         }
+
+        currentTrialTime = Time.unscaledTime - currentTrialTime;
+
 
         if (description != null)
         {
