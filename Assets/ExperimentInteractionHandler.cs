@@ -12,6 +12,7 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
 
     protected bool transparencyEnabled;
 
+    public bool drawPositionHelpers = true;
     public bool viewSphere = true;
     public BaseSimulator.TASK currentTask = BaseSimulator.TASK.DENSITY;
 
@@ -33,6 +34,29 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
             markerSolid();
 
         }
+    }
+
+    protected void DrawHelper()
+    {
+        Debug.Log(marker.transform.position);
+
+        RaycastHit hitUp;
+        Physics.Raycast(marker.transform.position, Vector3.up, out hitUp);
+        RaycastHit hitDown;
+        Physics.Raycast(marker.transform.position, Vector3.down, out hitDown);
+        Debug.DrawLine(hitDown.point, hitUp.point, Color.red, 0.0f, true);
+
+        RaycastHit hitLeft;
+        Physics.Raycast(marker.transform.position, Vector3.left, out hitLeft);
+        RaycastHit hitRight;
+        Physics.Raycast(marker.transform.position, Vector3.right, out hitRight);
+        Debug.DrawLine(hitLeft.point, hitRight.point, Color.red, 0.0f, true);
+
+        RaycastHit hitForw;
+        Physics.Raycast(marker.transform.position, Vector3.forward, out hitForw);
+        RaycastHit hitBack;
+        Physics.Raycast(marker.transform.position, Vector3.back, out hitBack);
+        Debug.DrawLine(hitForw.point, hitBack.point, Color.red, 0.0f, true);
     }
 
     public void SetTask(BaseSimulator.TASK task)

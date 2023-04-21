@@ -19,7 +19,7 @@ public class ExperimentHandler : MonoBehaviour
     public ExperimentInteractionHandler interactionHandler;
     public VRNavigation VRNavigator;
     public ObserverMovement desktopNavigatior;
-    public Canvas startMenu, doneMenu;
+    public Canvas startMenu, doneMenu, finishedMenu;
     public GameObject speedHelper, densityHelper;
     public Button startButton, doneButton;
     public TMP_Text description;
@@ -101,6 +101,7 @@ public class ExperimentHandler : MonoBehaviour
         });
 
         confidenceMenu.gameObject.SetActive(false);
+        finishedMenu.gameObject.SetActive(false);
         startMenu.gameObject.SetActive(true);
         startButton.onClick.AddListener(() => {
             StartTrial();
@@ -123,9 +124,6 @@ public class ExperimentHandler : MonoBehaviour
     {
         // Set Task
         int taskIndex = i / trajVizCombos.Count;
-        Debug.Log(i);
-        Debug.Log(trajVizCombos.Count);
-        Debug.Log(taskIndex);
 
         currTask = tasks[taskIndex];
 
@@ -136,6 +134,13 @@ public class ExperimentHandler : MonoBehaviour
 
     private void StartTrial()
     {
+        if (currentSimulation + 1 >= tasks.Count * 2 * trajectoryPaths.Count )
+        {
+            confidenceMenu.gameObject.SetActive(false);
+            finishedMenu.gameObject.SetActive(true);
+            return;
+        }
+
         SetTrial(++currentSimulation);
 
         if (description != null)
