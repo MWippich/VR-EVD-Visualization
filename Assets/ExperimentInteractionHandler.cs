@@ -23,6 +23,8 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
     public GameObject angleMarker;
     public float markerSize = 0.01f;
 
+    private Vector3 anglePos;
+
     protected void ToggleTransparency()
     {
         if (!transparencyEnabled)
@@ -59,12 +61,13 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
         Debug.DrawLine(hitForw.point, hitBack.point, Color.red, 0.0f, true);
     }
 
-    public void SetTask(BaseSimulator.TASK task)
+    public void SetTask(BaseSimulator.TASK task, Vector3 anglePos = new Vector3())
     {
+        this.anglePos = anglePos;
         currentTask = task;
         sphereMarker.SetActive(false);
         posMarker.SetActive(false);
-        //angleMarker.SetActive(false);
+        angleMarker.SetActive(false);
         switch (task)
         {
             case BaseSimulator.TASK.DENSITY:
@@ -75,13 +78,20 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
                 break;
             case BaseSimulator.TASK.ANGLE:
                 marker = angleMarker;
+                marker.transform.position = anglePos;
                 break;
             default:
                 marker = sphereMarker;
                 break;
         }
         marker.SetActive(true);
-        markerTransparent();
+        if(task == BaseSimulator.TASK.ANGLE)
+        {
+            markerSolid();
+        } else
+        {
+            markerTransparent();
+        }
     }
 
     public void HideMarker()
@@ -105,7 +115,10 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
         {
             foreach (Renderer r in marker.GetComponentsInChildren<Renderer>())
             {
-                r.material = transparentMat;
+                if (r.gameObject.GetComponent<LineRenderer>() == null)
+                {
+                    r.material = transparentMat;
+                }
             }
         }
     }
@@ -121,7 +134,10 @@ public abstract class ExperimentInteractionHandler : MonoBehaviour
         {
             foreach (Renderer r in marker.GetComponentsInChildren<Renderer>())
             {
-                r.material = solidMat;
+                if (r.gameObject.GetComponent<LineRenderer>() == null)
+                {
+                    r.material = solidMat;
+                }
             }
         }
     }

@@ -252,7 +252,7 @@
             // Direct Volume Rendering
             frag_out frag_dvr(frag_in i)
             {
-                #define MAX_NUM_STEPS 1024
+                #define MAX_NUM_STEPS 512
                 #define OPACITY_THRESHOLD (1.0 - 1.0 / 255.0)
 
 #ifdef DVR_BACKWARD_ON

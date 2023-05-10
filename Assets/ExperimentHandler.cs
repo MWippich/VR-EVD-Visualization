@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+using System.IO;
+
 public class ExperimentHandler : MonoBehaviour
 {
     [Header("Experiment Variables")]
@@ -24,9 +26,15 @@ public class ExperimentHandler : MonoBehaviour
     public Button startButton, doneButton;
     public TMP_Text description;
 
+    [Header("Testing")]
+    public bool testing = false;
+    public string testTrajectroy = "catheter001";
+    public BaseSimulator.TASK testTask;
+    public BaseSimulator.VIZ testViz;
+
     private bool inStartMenu = true;
     private bool inConfidenceMenu = false;
-    private int currentSimulation = -1;
+    public int currentSimulation = -1;
 
     private float currentTrialTime = .0f;
     private float doneTimer = -1f; //Used for timing double click
@@ -35,41 +43,69 @@ public class ExperimentHandler : MonoBehaviour
     private BaseSimulator.TASK currTask = BaseSimulator.TASK.POI;
     private BaseSimulator.VIZ currVisualization = BaseSimulator.VIZ.TRAIL;
 
-    private List<(BaseSimulator.VIZ, string)> trajVizCombos;
-
-    
-
+    private List<List<(BaseSimulator.VIZ, string)>> trajVizCombos;
+    private List<List<string>> taskTrajectories;
+    private Vector3 trialPosition, trialAngle;
 
     private Dictionary<BaseSimulator.TASK, string> descriptions = new Dictionary<BaseSimulator.TASK, string>
     {
-        {BaseSimulator.TASK.DENSITY, "Place the sphere such that it contains the tip of the catheter in as many frames as possible" },
+        {BaseSimulator.TASK.DENSITY, "Place the sphere such that it contains the tip of the catheter for as long time as possible" },
         {BaseSimulator.TASK.POI, "Place the marker such that it is as close as possible to the point where the tip of the catheter reaches the deepest point in the brain" },
-        {BaseSimulator.TASK.ANGLE, "Align the arrow such that it it corresponds to the tangent of the trajectory at the indicated point" },
+        {BaseSimulator.TASK.ANGLE, "Rotate the line such that it aligns with the direction of motion of the tip of the catheter at the instant when moving through the indicated point" },
     };
+
+    private float offset;
+
+    private List<Dictionary<string, dynamic>> experimentData = new List<Dictionary<string, dynamic>>();
 
     private void Awake()
     {
+        Random.InitState(participantNumber);
+
         if (visualization == BaseSimulator.VIZ.NONE) {
             Debug.LogError("visualization of ExperimentHandler shouldn't be 'NONE' and will thus not create proper experiment.");
             return;
         }
 
-        trajVizCombos = new List<(BaseSimulator.VIZ, string)>();
-        int i = 0;
-        while(i < trajectoryPaths.Count*2)
+        taskTrajectories = new List<List<string>> { GetTrajectorySubset(participantNumber, 0), GetTrajectorySubset(participantNumber, 1)};
+
+
+        trajVizCombos = new List<List<(BaseSimulator.VIZ, string)>>();
+        
+        int taskIndex = 0;
+        if((participantNumber/2) % 2 == 1 )
         {
-            foreach (string traj in trajectoryPaths)
-            {
-                BaseSimulator.VIZ viz = i % 2 == 0 ? BaseSimulator.VIZ.NONE : visualization;
-
-                trajVizCombos.Add((viz, traj));
-
-                i++;
-            }
+            //Every two participants, reverse task order (only works when there are two tasks)
+            tasks.Reverse();
         }
-        foreach((BaseSimulator.VIZ, string) comb in trajVizCombos)
+
+
+        foreach (BaseSimulator.TASK task in tasks)
         {
-            Debug.Log(comb);
+            List<(BaseSimulator.VIZ, string)> lst = new List<(BaseSimulator.VIZ, string)>();
+            int i = 0;
+            while (i < taskTrajectories[taskIndex].Count * 2)
+            {
+                foreach (string traj in taskTrajectories[taskIndex])
+                {
+                    BaseSimulator.VIZ viz = (i + participantNumber/4) % 2 == 1 ? BaseSimulator.VIZ.NONE : visualization;
+
+                    lst.Add((viz, traj));
+
+                    i++;
+                }
+            }
+            trajVizCombos.Add(lst);
+            taskIndex++;
+        }
+        int j = 0;
+        foreach (List<(BaseSimulator.VIZ, string)> lst in trajVizCombos)
+        {
+            foreach ((BaseSimulator.VIZ, string) comb in lst)
+            {
+                Debug.Log("Task " + j + ": " +  comb);
+            }
+            j++;
         }
     }
 
@@ -114,34 +150,155 @@ public class ExperimentHandler : MonoBehaviour
 
             Debug.Log("Trial time: " + currentTrialTime);
             Debug.Log("Trial confidence: " + confidence);
+            Debug.Log("Trial offset: " + offset);
+            Debug.Log("Trial position: " + trialPosition);
+            Dictionary<string, dynamic> trialData = new Dictionary<string, dynamic>()
+            {
+                { "trial", currentSimulation },
+                { "task", TaskName(currTask) },
+                { "trajectory", currTrajectory },
+                { "viz", VizName(currVisualization) },
+                { "time", currentTrialTime },
+                { "confidence", confidence },
+                { "offset", offset },
+                { "posx", trialPosition.x },
+                { "posy", trialPosition.y },
+                { "posz", trialPosition.z },
+            };
+            experimentData.Add(trialData);
 
+            SaveData();
             StartTrial();
         });
+    }
+
+    private string TaskName(BaseSimulator.TASK task)
+    {
+        switch (task)
+        {
+            case BaseSimulator.TASK.DENSITY:
+                return "density";
+            case BaseSimulator.TASK.POI:
+                return "poi";
+            case BaseSimulator.TASK.ANGLE:
+                return "angle";
+            default:
+                return "";
+        }
+    }
+
+    private string VizName(BaseSimulator.VIZ viz)
+    {
+        switch (viz)
+        {
+            case BaseSimulator.VIZ.DENSITY:
+                return "density";
+            case BaseSimulator.VIZ.TRAIL:
+                return "trail";
+            case BaseSimulator.VIZ.NONE:
+                return "none";
+            default:
+                return "";
+        }
+    }
+
+    public void Shuffle(List<string> list)
+    {
+        int n = list.Count;
+        while (n > 1)
+        {
+            n--;
+            int k = (int) (Random.value * (n + 1));
+            string value = list[k];
+            list[k] = list[n];
+            list[n] = value;
+        }
+    }
+
+    private List<string> GetTrajectorySubset(int participant, int taskNum)
+    {
+        int partNum = participant / 2; //2 participants in a row get the same ordering.
+        int offset = taskNum * 3 + partNum;
+        List<string> lst = new List<string>();
+        for(int i = 0; i < 3; i++)
+        {
+            lst.Add(trajectoryPaths[(i + offset) % 6]);
+        }
+        return lst;
     }
 
     //Sets task, trajectory and viz for the current task, given the index and the participant number
     private void SetTrial(int i)
     {
         // Set Task
-        int taskIndex = i / trajVizCombos.Count;
-
+        int taskIndex = i / trajVizCombos[0].Count;
         currTask = tasks[taskIndex];
 
         int trajVizIndex = i % trajVizCombos.Count;
-        currVisualization = trajVizCombos[trajVizIndex].Item1;
-        currTrajectory = trajVizCombos[trajVizIndex].Item2;
+        currVisualization = trajVizCombos[taskIndex][trajVizIndex].Item1;
+        currTrajectory = trajVizCombos[taskIndex][trajVizIndex].Item2;
+    }
+
+    private void SaveData(bool intermediate = true)
+    {
+
+        System.DateTime time = System.DateTime.Now;
+        string filePath;
+        if (intermediate)
+            filePath = Application.dataPath + "/Data/Intermediate/" + "trialData_Part_" + participantNumber + "_group_" + VizName(visualization) + "_" + time.Year + "-" + time.Month + "-" + time.Day + "_" +  time.Hour + "_" + time.Minute + "_" + time.Second +  ".csv";
+        else
+        {
+            filePath = Application.dataPath + "/Data/" + "trialData_Part_" + participantNumber + "_group_" + VizName(visualization) + ".csv";
+        }
+
+        StreamWriter writer = new StreamWriter(filePath);
+
+        writer.WriteLine("trial, task, trajectory, viz, time, confidence, offset, posx, posy, posz, anglex, angley, anglez");
+
+        foreach(Dictionary<string, dynamic> dat in experimentData)
+        {
+            writer.Write(dat["trial"]);
+            writer.Write(", ");
+            writer.Write(dat["task"]);
+            writer.Write(", ");
+            writer.Write(dat["trajectory"]);
+            writer.Write(", ");
+            writer.Write(dat["viz"]);
+            writer.Write(", ");
+            writer.Write(dat["time"].ToString());
+            writer.Write(", ");
+            writer.Write(dat["confidence"].ToString());
+            writer.Write(", ");
+            writer.Write(dat["offset"].ToString());
+            writer.Write(", ");
+            writer.Write(dat["posx"].ToString());
+            writer.Write(", ");
+            writer.Write(dat["posy"].ToString());
+            writer.Write(", ");
+            writer.Write(dat["posz"].ToString());
+            writer.Write(", ");
+            writer.WriteLine();
+
+        }
+
+        writer.Flush();
+        writer.Close();
     }
 
     private void StartTrial()
     {
-        if (currentSimulation + 1 >= tasks.Count * 2 * trajectoryPaths.Count )
+       
+
+        if (!testing && currentSimulation + 1 >= tasks.Count * 2 * 3 )
         {
             confidenceMenu.gameObject.SetActive(false);
             finishedMenu.gameObject.SetActive(true);
+            SaveData(false);
             return;
         }
 
-        SetTrial(++currentSimulation);
+        if(!testing)
+            SetTrial(++currentSimulation);
 
         if (description != null)
         {
@@ -165,9 +322,16 @@ public class ExperimentHandler : MonoBehaviour
         doneButton.interactable = false;
         inConfidenceMenu = false;
         confidenceMenu.gameObject.SetActive(false);
+        if (testing)
+        {
+            currTrajectory = testTrajectroy;
+            currTask = testTask;
+            currVisualization = testViz;
+        }
         string[] paths = { currTrajectory };
         simulator.StartSimulation(paths, currTask, currVisualization);
-        interactionHandler.SetTask(currTask);
+        interactionHandler.SetTask(currTask, simulator.anglePosition);
+        
         if (speedHelper != null)
         {
             speedHelper.SetActive(currVisualization == BaseSimulator.VIZ.TRAIL);
@@ -197,6 +361,26 @@ public class ExperimentHandler : MonoBehaviour
         }
 
         currentTrialTime = Time.unscaledTime - currentTrialTime;
+
+        //Find precision
+        if (currTask == BaseSimulator.TASK.ANGLE)
+        {
+            Vector3 GT = simulator.groundTruth.getAngleGT(currTrajectory);
+            Quaternion markerRot = interactionHandler.angleMarker.transform.rotation;
+            offset = Quaternion.Angle(Quaternion.FromToRotation(Vector3.up, GT), markerRot);
+
+            trialAngle = markerRot.eulerAngles;
+        }
+        else
+        {
+            Vector3 GT = currTask == BaseSimulator.TASK.DENSITY ? simulator.groundTruth.getDensityGT(currTrajectory) : simulator.groundTruth.getPOIGT(currTrajectory);
+
+            Vector3 placedPos = interactionHandler.marker.transform.position;
+
+            trialPosition = placedPos;
+            offset = Vector3.Distance(GT, placedPos);
+        }
+
 
 
         if (description != null)

@@ -15,7 +15,6 @@ Unity.Profiling.LowLevel.Unsafe.ProfilerUnsafeUtility::EndSample
 Unity.Profiling.LowLevel.Unsafe.ProfilerUnsafeUtility::GetCategoryDescription_Injected
 Unity.Profiling.ProfilerRecorder::GetRunning_Injected
 Unity.Profiling.ProfilerRecorder::GetValid_Injected
-Unity.Profiling.ProfilerRecorder::CopyTo_Pointer_Injected
 Unity.Profiling.ProfilerRecorder::GetCount_Injected
 Unity.Profiling.ProfilerRecorder::GetLastValue_Injected
 Unity.Profiling.ProfilerRecorder::Control_Injected
@@ -198,6 +197,7 @@ UnityEngine.Application::get_isBatchMode
 UnityEngine.Application::get_isFocused
 UnityEngine.Application::get_isPlaying
 UnityEngine.Application::get_runInBackground
+UnityEngine.Application::get_dataPath
 UnityEngine.Application::get_productName
 UnityEngine.Application::get_unityVersion
 UnityEngine.Application::get_version
@@ -234,6 +234,7 @@ UnityEngine.Camera::get_cameraToWorldMatrix_Injected
 UnityEngine.Camera::get_pixelRect_Injected
 UnityEngine.Camera::get_projectionMatrix_Injected
 UnityEngine.Camera::get_worldToCameraMatrix_Injected
+UnityEngine.Camera::set_nearClipPlane
 UnityEngine.Camera::set_rect_Injected
 UnityEngine.Camera::get_current
 UnityEngine.Camera::get_main
@@ -306,6 +307,7 @@ UnityEngine.Collider::get_enabled
 UnityEngine.Collider::get_isTrigger
 UnityEngine.Collider::ClosestPoint_Injected
 UnityEngine.Collider::get_bounds_Injected
+UnityEngine.Collider::set_isTrigger
 UnityEngine.Component::BroadcastMessage
 UnityEngine.Component::GetComponentFastPath
 UnityEngine.Component::GetComponentsForListInternal
@@ -343,6 +345,7 @@ UnityEngine.Cursor::set_visible
 UnityEngine.Cursor::get_lockState
 UnityEngine.Debug::get_isDebugBuild
 UnityEngine.Debug::ExtractStackTraceNoAlloc
+UnityEngine.Debug::DrawLine_Injected
 UnityEngine.DebugLogHandler::Internal_Log
 UnityEngine.DebugLogHandler::Internal_LogException
 UnityEngine.Display::RelativeMouseAtImpl
@@ -408,7 +411,6 @@ UnityEngine.GameObject::CompareTag
 UnityEngine.GameObject::get_activeInHierarchy
 UnityEngine.GameObject::get_activeSelf
 UnityEngine.GameObject::get_layer
-UnityEngine.GameObject::get_tag
 UnityEngine.GameObject::GetComponentFastPath
 UnityEngine.GameObject::Internal_CreateGameObject
 UnityEngine.GameObject::SendMessage
@@ -682,13 +684,17 @@ UnityEngine.Mesh::Internal_Create
 UnityEngine.Mesh::MarkDynamicImpl
 UnityEngine.Mesh::PrintErrorCantAccessChannel
 UnityEngine.Mesh::RecalculateBoundsImpl
+UnityEngine.Mesh::RecalculateNormalsImpl
 UnityEngine.Mesh::SetArrayForChannelImpl
 UnityEngine.Mesh::SetIndicesImpl
 UnityEngine.Mesh::get_bounds_Injected
 UnityEngine.Mesh::set_bounds_Injected
 UnityEngine.Mesh::set_indexFormat
+UnityEngine.MeshCollider::set_convex
+UnityEngine.MeshCollider::set_sharedMesh
 UnityEngine.MeshFilter::set_sharedMesh
 UnityEngine.MeshFilter::get_sharedMesh
+UnityEngine.MeshRenderer::set_additionalVertexStreams
 UnityEngine.MonoBehaviour::Internal_IsInvokingAll
 UnityEngine.MonoBehaviour::IsInvoking
 UnityEngine.MonoBehaviour::IsObjectMonoBehaviour
@@ -750,8 +756,6 @@ UnityEngine.PlayerConnectionInternal::RegisterInternal
 UnityEngine.PlayerConnectionInternal::SendMessage
 UnityEngine.PlayerConnectionInternal::UnregisterInternal
 UnityEngine.Profiling.Profiler::GetRuntimeMemorySizeLong
-UnityEngine.Profiling.Profiler::BeginSampleImpl
-UnityEngine.Profiling.Profiler::EndSample
 UnityEngine.PropertyNameUtils::PropertyNameFromString_Injected
 UnityEngine.QualitySettings::get_activeColorSpace
 UnityEngine.Quaternion::AngleAxis_Injected
@@ -763,6 +767,7 @@ UnityEngine.Quaternion::Inverse_Injected
 UnityEngine.Quaternion::LookRotation_Injected
 UnityEngine.Quaternion::Slerp_Injected
 UnityEngine.Random::Range
+UnityEngine.Random::get_value
 UnityEngine.Random::InitState
 UnityEngine.Random::get_state_Injected
 UnityEngine.Random::set_state_Injected
@@ -1053,7 +1058,6 @@ UnityEngine.Time::get_deltaTime
 UnityEngine.Time::get_fixedDeltaTime
 UnityEngine.Time::get_fixedUnscaledTime
 UnityEngine.Time::get_realtimeSinceStartup
-UnityEngine.Time::get_smoothDeltaTime
 UnityEngine.Time::get_time
 UnityEngine.Time::get_unscaledDeltaTime
 UnityEngine.Time::get_unscaledTime

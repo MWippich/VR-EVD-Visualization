@@ -28,7 +28,7 @@ public class BaseSimulator : MonoBehaviour
         const string savePath = "/GroundTruth.json";
 
         public List<string> trajectories = new List<string>();
-        public List<Quaternion> angleGT = new List<Quaternion>();
+        public List<Vector3> angleGT = new List<Vector3>();
         public List<Vector3> densityGT = new List<Vector3>();
         public List<Vector3> POIGT = new List<Vector3>();
 
@@ -42,9 +42,9 @@ public class BaseSimulator : MonoBehaviour
         public static GroundTruth load()
         {
             string text = File.ReadAllText(Application.dataPath + savePath);
-            Debug.Log(text);
+            //Debug.Log(text);
             GroundTruth gt = JsonUtility.FromJson<GroundTruth>(text);
-            Debug.Log(JsonUtility.ToJson(gt));
+            //Debug.Log(JsonUtility.ToJson(gt));
             return gt;
         }
 
@@ -56,22 +56,59 @@ public class BaseSimulator : MonoBehaviour
                 densityGT[i] = pos;
             } else
             {
+                trajectories.Add(trajectory);
                 densityGT.Add(pos);
-                angleGT.Add(Quaternion.identity);
+                angleGT.Add(Vector3.zero);
                 POIGT.Add(Vector3.zero);
             }
 
         }
 
-        public Quaternion getAngleGT(string trajectory)
+        public void setAngleGT(string trajectory, Vector3 angle)
         {
             int i = trajectories.IndexOf(trajectory);
-            if (i != -1 && angleGT[i] != Quaternion.identity)
+            if (i != -1)
+            {
+                angleGT[i] = angle;
+            }
+            else
+            {
+                trajectories.Add(trajectory);
+                densityGT.Add(Vector3.zero);
+                angleGT.Add(angle);
+                POIGT.Add(Vector3.zero);
+            }
+
+        }
+
+        public bool hasDensityGT(string trajectory)
+        {
+            int i = trajectories.IndexOf(trajectory);
+            return i != -1 && densityGT[i] != Vector3.zero;
+        }
+
+        public bool hasPOIGT(string trajectory)
+        {
+            int i = trajectories.IndexOf(trajectory);
+            return i != -1 && POIGT[i] != Vector3.zero;
+        }
+
+        public bool hasAngleGT(string trajectory)
+        {
+            int i = trajectories.IndexOf(trajectory);
+            return i != -1 && angleGT[i] != Vector3.zero;
+        }
+
+        public Vector3 getAngleGT(string trajectory)
+        {
+
+            int i = trajectories.IndexOf(trajectory);
+            if (i != -1 && angleGT[i] != Vector3.zero)
             {
                 return angleGT[i];
             }
             Debug.LogWarning("No angle Ground Truth for trajectory " + trajectory);
-            return Quaternion.identity;
+            return Vector3.zero;
         }
         public Vector3 getDensityGT(string trajectory)
         {
@@ -81,6 +118,16 @@ public class BaseSimulator : MonoBehaviour
                 return densityGT[i];
             }
             Debug.LogWarning("No density Ground Truth for trajectory " + trajectory);
+            return Vector3.zero;
+        }
+        public Vector3 getPOIGT(string trajectory)
+        {
+            int i = trajectories.IndexOf(trajectory);
+            if (i != -1 && POIGT[i] != Vector3.zero)
+            {
+                return POIGT[i];
+            }
+            Debug.LogWarning("No POI Ground Truth for trajectory " + trajectory);
             return Vector3.zero;
         }
     }
@@ -131,6 +178,7 @@ public class BaseSimulator : MonoBehaviour
         public Color[] modelTipCol; // Calculated from the data by pre-runing the simulation
 
         public Vector3 tipHighestDensityPos;
+        public Vector3 tipAngleRot;
 
         //coordinates for 3D objects transform update
         public float x1, x2, x3, x4, x5, x6, x7, x8, x9, x10,
@@ -153,6 +201,8 @@ public class BaseSimulator : MonoBehaviour
         DENSITY,
     }
 
+    public bool calculateAndSaveGT = true, overrideGT = false;
+
     public UnityEvent simulationStarted;
 
     [Header("Reference Markers Prefab")]
@@ -161,7 +211,7 @@ public class BaseSimulator : MonoBehaviour
     public Transform world;
 
     [Header("GUI")]
-    public Text[] FrameStuff;
+
     public Slider slider; //slider to control the animation speed
     public bool sliderSelected;
     public Button playButton; //play&pause button
@@ -172,12 +222,12 @@ public class BaseSimulator : MonoBehaviour
     public Button backwardButton;
     public Button restartButton;
     public GameObject observer;
-    public TMP_Text stateText;
+    public TMP_Text stateText, debugFrameNmbr, debugTrajectoryPath;
 
     [Header("Experiment")]
     public bool showGroundTruth;
     public TASK task = TASK.DENSITY;
-    public GameObject groundTruthMarker;
+    public GameObject groundTruthMarker, angleGroundTruthMarker;
 
     [Header("Visualization")]
     public bool applyWarpData = true;
@@ -220,7 +270,8 @@ public class BaseSimulator : MonoBehaviour
     protected bool transparencyEnabled;
     protected List<Data> dataList;
     protected Vector3 tipOffset = new Vector3(0.0f, -0.22304f, -0.002f); // Constant for the length from cathCenter to the bottom tip of the catheter
-    
+    [HideInInspector]
+    public Vector3 anglePosition;
 
     [Header("Rendered Representation")]
     private GameObject phantomSkull;
@@ -233,36 +284,46 @@ public class BaseSimulator : MonoBehaviour
 
     //Custom transform coordinates for the skull
     protected Dictionary<String, Vector3> skullOffsetPos = new Dictionary<String, Vector3> {
-        {"catheter001",new Vector3(-0.939999998f,-14.1099997f,5.55000019f)}, //file : cathether001 NOT WELL ALIGNED
-        {"catheter002", new Vector3(-1.88f,-13.8599997f,4.67000008f) }, //file : cathether002 NOT WELL ALIGNED
-        {"catheter003", new Vector3(-1.10000002f,-14.1099997f,6.32000017f)}, //file : cathether003
-        {"catheter004",new Vector3(-1.28999996f,-13.4799995f,6.07999992f) }, //file : cathether004 NOT WELL ALIGNED
-        {"catheter005",new Vector3(-1.08000004f,-13.6199999f,6.5f) }, //file : cathether005
-        {"catheter006",new Vector3(-0.639999986f,-12.6899996f,5.57000017f) }, //file : cathether006
-        {"catheter007",new Vector3(-0.850000024f,-14.1099997f,5.6500001f) } //file : cathether007
+        {"test",new Vector3(-0.939999998f,-14.1099997f,5.55000019f)}, //file : cathether001 NOT WELL ALIGNED
+        {"catheter1", new Vector3(-1.88f,-13.8599997f,4.67000008f) }, //file : cathether002 NOT WELL ALIGNED
+        {"catheter2", new Vector3(-1.10000002f,-14.1099997f, 6.32000017f)}, //file : cathether003
+        {"catheter3",new Vector3(-1.55f,-14.3f, 5.77999992f) }, //file : cathether004 NOT WELL ALIGNED
+        {"catheter4",new Vector3(-1.08000004f,-13.6199999f,6.5f) }, //file : cathether005
+        {"catheter006",new Vector3(-1.239999986f,-13.6899996f,5.57000017f) }, //file : cathether006
+        {"catheter5",new Vector3(-0.850000024f,-14.1099997f,5.6500001f) }, //file : cathether007
+        {"catheter6",new Vector3(-0.850000024f,-14.5099997f,5.6500001f) }, //file : cathether007
         };
     protected Dictionary<String, Vector3> skullOffsetRot = new Dictionary<String, Vector3> {
-        {"catheter001",new Vector3(38.116478f,177.862823f,358.404968f)}, //file : cathether001
-        {"catheter002", new Vector3(42.3742065f,181.589996f,3.92515182f) }, //file : cathether002
-        {"catheter003", new Vector3(43.9130974f,177.666306f,358.909271f) }, //file : cathether003
-        {"catheter004",new Vector3(42.3742065f,181.589996f,3.92515182f) }, //file : cathether004
-        {"catheter005",new Vector3(42.3742065f,181.589996f,3.92515182f) }, //file : cathether005
+        {"test",new Vector3(38.116478f,177.862823f,358.404968f)}, //file : cathether001
+        {"catheter1", new Vector3(42.3742065f,181.589996f,3.92515182f) }, //file : cathether002
+        {"catheter2", new Vector3(43.9130974f,177.666306f,358.909271f) }, //file : cathether003
+        {"catheter3",new Vector3(42.3742065f,181.589996f,3.92515182f) }, //file : cathether004
+        {"catheter4",new Vector3(42.3742065f,181.589996f,3.92515182f) }, //file : cathether005
         {"catheter006",new Vector3(42.3742104f,181.589996f,5.4209547f) }, //file : cathether006
-        {"catheter007",new Vector3(41.510006f,177.755005f,359.040009f) } //file : cathether007
+        {"catheter5",new Vector3(41.510006f,177.755005f,359.040009f) }, //file : cathether007
+        {"catheter6",new Vector3(41.510006f,177.755005f,359.040009f) }, //file : cathether007
         };
     protected Dictionary<String, Vector3> offsetPos = new Dictionary<String, Vector3> {
-        {"catheter001", new Vector3(0.036f, 0.866f, -0.283f)}, 
-        {"catheter002", new Vector3(0.034f, 0.864f, -0.283f)},
-        {"catheter003", new Vector3(0.038f, 0.866f, -0.288f)},
-        {"catheter004", new Vector3(0.035f, 0.861f, -0.293f)},
-        {"catheter005", new Vector3(0.030f, 0.860f, -0.294f)}, 
+        {"test", new Vector3(0.036f, 0.866f, -0.283f)}, 
+        {"catheter1", new Vector3(0.034f, 0.864f, -0.283f)},
+        {"catheter2", new Vector3(0.038f, 0.866f, -0.288f)},
+        {"catheter3", new Vector3(0.035f, 0.861f, -0.293f)},
+        {"catheter4", new Vector3(0.030f, 0.860f, -0.294f)}, 
         {"catheter006", new Vector3(0.006f, 0.868f, -0.252f)},
-        {"catheter007", new Vector3(0.007f, 0.866f, -0.252f)} 
+        {"catheter5", new Vector3(0.007f, 0.866f, -0.252f)},
+        {"catheter6", new Vector3(0.007f, 0.866f, -0.252f)},
         };
 
     private Dictionary<string, int> anglePivotFrameIndex = new Dictionary<string, int>
     {
-        { "trajectory003", 125 },
+        { "test", 10 },
+        { "catheter1", 15 },
+        { "catheter2", 15 },
+        { "catheter3", 10 },
+        { "catheter4", 15 },
+        { "catheter006", 15 },
+        { "catheter5", 15 },
+        { "catheter6", 15 },
     };
 
     public GroundTruth groundTruth;
@@ -274,6 +335,19 @@ public class BaseSimulator : MonoBehaviour
 
     public void StartSimulation(String[] paths, TASK task, VIZ visualization)
     {
+
+        groundTruthMarker.SetActive(showGroundTruth && task != TASK.ANGLE);
+        angleGroundTruthMarker.SetActive(showGroundTruth && task == TASK.ANGLE);
+
+        if (debugTrajectoryPath != null)
+        {
+            debugTrajectoryPath.text = String.Join(", ", paths);
+        }
+        if(debugFrameNmbr != null)
+        {
+            debugFrameNmbr.text = "Frame: 0/0";
+            
+        }
         applyPathTrace = false;
         applySpaceTimeDensity = false;
         if(visualization == VIZ.TRAIL)
@@ -282,7 +356,6 @@ public class BaseSimulator : MonoBehaviour
             applySpaceTimeDensity = true;
 
         this.task = task;
-
 
         if (dataList != null)
         {
@@ -319,9 +392,49 @@ public class BaseSimulator : MonoBehaviour
             findTrueTip(data);
         }
         findMinMax(dataList);
-        foreach (Data data in dataList)
+
+        if (task == TASK.ANGLE)
         {
-            //findHighestDensity(data, observer.GetComponent<ExperimentInteractionHandler>().markerSize / 2);
+            // Calc angle pos
+            Data data = dataList[0];
+            anglePosition = data.modelTip[anglePivotFrameIndex[data.path]];
+        }
+
+        if (calculateAndSaveGT)
+        {
+            foreach (Data data in dataList)
+            {
+                if (!groundTruth.hasDensityGT(data.path) || overrideGT)
+                {
+                    findHighestDensity(data, observer.GetComponent<ExperimentInteractionHandler>().markerSize / 2);
+                    groundTruth.setDensityGT(data.path, data.tipHighestDensityPos);
+
+                } else
+                {
+                    Vector3 densityGT = groundTruth.getDensityGT(data.path);
+                    groundTruthMarker.transform.position = densityGT;
+                    data.tipHighestDensityPos = densityGT;
+
+                }
+                if (!groundTruth.hasAngleGT(data.path) || overrideGT)
+                {
+                    Vector3 angleGT = findAngle(data, anglePivotFrameIndex[data.path]);
+                    groundTruth.setAngleGT(data.path, angleGT);
+                    data.tipAngleRot = angleGT;
+                }
+                else
+                {
+                    Vector3 angleGT = groundTruth.getAngleGT(data.path);
+                    data.tipAngleRot = angleGT;
+                }
+                if(angleGroundTruthMarker != null)
+                {
+                    angleGroundTruthMarker.transform.position = anglePosition;
+                    angleGroundTruthMarker.transform.rotation = Quaternion.FromToRotation(Vector3.up, data.tipAngleRot);
+                }
+
+                groundTruth.save();
+            }
         }
         moreData = true;
 
@@ -346,7 +459,6 @@ public class BaseSimulator : MonoBehaviour
     {
         groundTruth = GroundTruth.load();
 
-        groundTruthMarker.SetActive(showGroundTruth);
 
         //Button btn = playButton.GetComponent<Button>();
         if(playButton != null)
@@ -392,9 +504,9 @@ public class BaseSimulator : MonoBehaviour
             
         }
         // Update the GUI
-        if (FrameStuff[0])
+        if (debugFrameNmbr != null)
         {
-            FrameStuff[0].text = "Frame: " + index + " / " + maxFileSize;
+            debugFrameNmbr.text = "Frame: " + index + " / " + maxFileSize;
         }
 
         if (sliderSelected)
@@ -405,19 +517,6 @@ public class BaseSimulator : MonoBehaviour
             }
         }
         SetStateText();
-    }
-    public void SliderSelected()
-    {
-
-        /*paused = true;
-        Debug.Log("EA");
-        sliderSelected = true;*/
-    }
-
-    public void SliderDeselect()
-    {
-        /*Debug.Log("Unity");
-        sliderSelected = false;*/
     }
 
     protected void findTrueTip(Data data)
@@ -515,13 +614,16 @@ public class BaseSimulator : MonoBehaviour
     //Good enough. Should be no ambigous points, and just make sure the scale measuring participants isn't finer than this.
     private void findHighestDensity(Data data, float sphereRadius)
     {
-        float stepSize = sphereRadius / 10;
+        float stepSize = sphereRadius;
         float sqrRadius = sphereRadius * sphereRadius; //Used instead of radius to speed up distance calculations
 
         Vector3Int numSteps = Vector3Int.CeilToInt(rangeTip / stepSize);
 
         List<Vector3> highestDensityPoses = new List<Vector3>();
         int maxNumPoints = 0;
+
+        float istepSize = sphereRadius / 10f;
+        const int inumSteps = 20;
 
         for (int x = 0; x < numSteps.x; x++)
         {
@@ -532,18 +634,19 @@ public class BaseSimulator : MonoBehaviour
                     Vector3 pos = new Vector3(minTip.x + stepSize * x, minTip.y + stepSize * y, minTip.z + stepSize * z);
 
                     int numPoints = 0;
-                    foreach(Vector3 point in data.modelTip)
+                    foreach (Vector3 point in data.modelTip)
                     {
                         if ((pos - point).sqrMagnitude < sqrRadius)
                         {
                             numPoints++;
                         }
                     }
-                    if(numPoints == 0)
+                    if (numPoints == 0)
                     {
                         //Tiny optimization
                         continue;
                     }
+
                     if(numPoints > maxNumPoints)
                     {
                         highestDensityPoses.Clear();
@@ -552,6 +655,39 @@ public class BaseSimulator : MonoBehaviour
                     if(numPoints >= maxNumPoints)
                     {
                         highestDensityPoses.Add(pos);
+                    }
+
+                    for (int ix = -inumSteps / 2 - 1; ix <= inumSteps / 2; ix++)
+                    {
+                        for (int iy = -inumSteps / 2 - 1; iy <= inumSteps / 2; iy++)
+                        {
+                            for (int iz = -inumSteps / 2 - 1; iz <= inumSteps / 2; iz++)
+                            {
+                                if(ix == 0 && iy == 0 && iz == 0)
+                                {
+                                    continue;
+                                }
+                                Vector3 newPos = pos + new Vector3(istepSize * ix, istepSize * iy, istepSize * iz);
+                                numPoints = 0;
+                                foreach (Vector3 point in data.modelTip)
+                                {
+                                    if ((newPos - point).sqrMagnitude < sqrRadius)
+                                    {
+                                        numPoints++;
+                                    }
+                                }
+                                if (numPoints > maxNumPoints)
+                                {
+                                    highestDensityPoses.Clear();
+                                    maxNumPoints = numPoints;
+                                }
+                                if (numPoints >= maxNumPoints)
+                                {
+                                    highestDensityPoses.Add(newPos);
+                                }
+
+                            }
+                        }
                     }
                 }
             }
@@ -563,6 +699,21 @@ public class BaseSimulator : MonoBehaviour
 
     }
 
+    private Vector3 findAngle(Data data, int index)
+    {
+        if(index <= 0 || index >= data.fileSize - 1)
+        {
+            Debug.LogError("cannot find motion of last or first point of data, or index is out of range. index: " + index);
+            return Vector3.zero;
+        }
+
+        Vector3 prev = data.modelTip[index - 1];
+        Vector3 next = data.modelTip[index + 1];
+        Vector3 direction = (next - prev).normalized;
+        Debug.Log(direction);
+
+        return direction;
+    }
     protected void calculateSpaceTimeDensity(List<Data> dataList)
     {
         //Debug.Log("Calculating space time density");
@@ -765,9 +916,9 @@ public class BaseSimulator : MonoBehaviour
                 index++;
 
             // Update the GUI
-            if (FrameStuff[0])
+            if (debugFrameNmbr != null)
             {
-            FrameStuff[0].text = "Frame: " + index +" / " + maxFileSize;
+                debugFrameNmbr.text = "Frame: " + index + " / " + maxFileSize;
             }
             //Debug.Log("index" + index);
 
@@ -1199,7 +1350,7 @@ public class BaseSimulator : MonoBehaviour
     {
         int i = 0;
         string line = lines[i + 1]; // Don't count the header line
-        while (!String.IsNullOrWhiteSpace(line))
+        while (!String.IsNullOrWhiteSpace(line) && lines.Length > i + 2)
         {
             i++;
 
@@ -1213,6 +1364,7 @@ public class BaseSimulator : MonoBehaviour
     {
         int i = 1;
         string line;
+        int firstField = -1;
         line = lines[i]; //first line
         //extract info and distribute
         while (!String.IsNullOrWhiteSpace(line)) //interrupt at empty line or end of file
@@ -1220,6 +1372,13 @@ public class BaseSimulator : MonoBehaviour
             string[] temp = line.Split(separator.ToCharArray());
             //string[] temp = line.Split("\t");
             int runtimeField = Int32.Parse(temp[0]) - 1; //current array id
+            if(firstField == -1)
+            {
+                //If modified recording save first field index and offset subsequent fields
+                firstField = runtimeField;
+            }
+            runtimeField -= firstField;
+
 
             //Debug.Log(runtimeField);
 

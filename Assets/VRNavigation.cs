@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class VRNavigation : MonoBehaviour
 {
@@ -10,6 +11,7 @@ public class VRNavigation : MonoBehaviour
     public InputActionReference resetView;
     public InputActionReference LGrab;
     public InputActionReference RGrab;
+    public XRRayInteractor rayInteractor;
 
     public GameObject rightHand;
     public GameObject leftHand;
@@ -62,7 +64,7 @@ public class VRNavigation : MonoBehaviour
 
     private void Update()
     {
-        if (!blockFly) {
+        if (!blockFly && !rayInteractor.IsOverUIGameObject()) {
             float flyValue = fly.action.ReadValue<float>();
             float negativeFlyValue = flyBackwards.action.ReadValue<float>();
             Vector3 flyVelocity = 60 * Time.deltaTime * flySpeed * (flyValue - negativeFlyValue) * (rightHand.transform.rotation * Vector3.forward);

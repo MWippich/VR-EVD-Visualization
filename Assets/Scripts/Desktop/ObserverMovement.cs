@@ -20,14 +20,13 @@ public class ObserverMovement : MonoBehaviour
     void Start()
     {
         resetButton.onClick.AddListener(ResetView);
-
-        transform.position = initialTransform.position;
-        transform.rotation = initialTransform.rotation;
+        ResetView();
     }
 
     public void Restart()
     {
-
+        ResetView();
+        GetComponent<LookDirection>().ResetView();
     }
 
     // Update is called once per frame
@@ -58,11 +57,11 @@ public class ObserverMovement : MonoBehaviour
         }
         if (Input.GetKey(KeyCode.Q))
         {
-            transform.position -= transform.up * moveSpeed * 0.002f * speed;
+            transform.position -= transform.up * moveSpeed * Time.deltaTime * speed;
         }
         if (Input.GetKey(KeyCode.E))
         {
-            transform.position += transform.up * moveSpeed * 0.002f * speed;
+            transform.position += transform.up * moveSpeed * Time.deltaTime * speed;
         }
 
         if (Input.GetKey(KeyCode.Return))

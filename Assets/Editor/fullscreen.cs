@@ -17,7 +17,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-/*
+
 #if UNITY_EDITOR
 
 using System;
@@ -45,7 +45,7 @@ public static class FullscreenGameView
     private static readonly object falseObject = false; // Only box once. This is a matter of principle.
     private static EditorWindow _instance;
 
-    private static readonly bool fullscreen = true;
+    private static readonly bool fullscreen = false;
 
     static FullscreenGameView()
     {
@@ -114,4 +114,3 @@ public static class FullscreenGameView
     }
 }
 #endif
-*/

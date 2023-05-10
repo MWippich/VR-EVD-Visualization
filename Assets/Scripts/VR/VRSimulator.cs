@@ -57,7 +57,8 @@ public class VRSimulator : BaseSimulator
                 simulateData(data);
                 if (applyPathTrace) visualizePathTrace(data);
             }
-            index++;
+            index += 2;
+            index = Math.Clamp(index, 0, maxFileSize - 1);
         }
 
         if (fastBackward && index > 0)
@@ -67,7 +68,8 @@ public class VRSimulator : BaseSimulator
                 simulateData(data);
                 if (applyPathTrace) visualizePathTrace(data);
             }
-            index--;
+            index -= 2;
+            index = Math.Clamp(index, 0, maxFileSize - 1);
         }
     }
 

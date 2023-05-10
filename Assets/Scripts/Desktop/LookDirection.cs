@@ -16,6 +16,7 @@ public class LookDirection : ExperimentInteractionHandler
 
     public float xSens;
     public float ySens;
+    public float rotSpeed;
     Vector2 rot;
 
     public float markerDist = 0.05f;
@@ -98,11 +99,11 @@ public class LookDirection : ExperimentInteractionHandler
                     Vector3 mousePosDelta = GetComponent<Camera>().ScreenToWorldPoint(mousePos)
                         - GetComponent<Camera>().ScreenToWorldPoint(prevPos);
 
-                    marker.transform.position += mousePosDelta * Time.deltaTime;
+                    marker.transform.position += mousePosDelta * 0.025f;
                 }
                 if (Input.mouseScrollDelta.y != 0)
                 {
-                    marker.transform.position += Input.mouseScrollDelta.y * GetComponent<Camera>().transform.forward * 0.001f;
+                    marker.transform.position += Input.mouseScrollDelta.y * GetComponent<Camera>().transform.forward * 0.0005f;
                 }
             }
 
@@ -130,8 +131,7 @@ public class LookDirection : ExperimentInteractionHandler
         } else
         {
             // Angle Task
-
-
+            UpdateAngle();
         }
         if (Input.GetKey(KeyCode.Return))
         {
@@ -141,7 +141,24 @@ public class LookDirection : ExperimentInteractionHandler
         prevMousePos = Input.mousePosition;
     }
 
-    private void ResetView()
+    private void UpdateAngle()
+    {
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        {
+            markerPlaced.Invoke(true);
+        }
+
+        if (Input.GetMouseButton(0))
+        {
+            float rotX = Input.GetAxis("Mouse X") * rotSpeed * Mathf.Deg2Rad;
+            float rotY = Input.GetAxis("Mouse Y") * rotSpeed * Mathf.Deg2Rad;
+
+            marker.transform.Rotate(GetComponent<Camera>().transform.up, -rotX, Space.World);
+            marker.transform.Rotate(GetComponent<Camera>().transform.right, rotY, Space.World);
+        }
+    }
+
+    public void ResetView()
     {
         rot = initialTransform.eulerAngles;
     }
