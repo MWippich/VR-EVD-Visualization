@@ -118,7 +118,7 @@ public class LookDirection : ExperimentInteractionHandler
                 scrollSpeed *= 2;
             }
 
-            markerDist += Input.mouseScrollDelta.y * scrollSpeed;
+            markerDist += Input.mouseScrollDelta.y * scrollSpeed;   
             markerDist = Mathf.Clamp(markerDist, 0.015f, 0.1f);
 
             if (transparencyEnabled)

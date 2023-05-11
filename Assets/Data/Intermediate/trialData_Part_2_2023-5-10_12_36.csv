@@ -1,7 +1,0 @@
-trial, task, trajectory, viz, time, confidence, offset, posx, posy, posz, anglex, angley, anglez
-0, poi, catheter2, density, 2.133677, 3, 1.037341, -0.02052485, 0.8973038, -0.5200966, 
-1, poi, catheter3, none, 8.862791, 3, 1.039741, -0.02506267, 0.8995869, -0.520746, 
-2, poi, catheter2, density, 1.389425, 5, 1.034724, -0.03204392, 0.8944165, -0.5192754, 
-3, poi, catheter3, none, 0.9771824, 4, 1.029889, -0.03888553, 0.8893803, -0.5178429, 
-4, poi, catheter2, density, 1.009193, 2, 1.030385, -0.03378925, 0.8900517, -0.5180339, 
-5, poi, catheter3, none, 1.205503, 4, 1.032511, -0.03469678, 0.8921334, -0.518626, 

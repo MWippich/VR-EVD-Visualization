@@ -14,6 +14,7 @@ public class ExperimentHandler : MonoBehaviour
     public BaseSimulator.VIZ visualization;
     public List<BaseSimulator.TASK> tasks = new List<BaseSimulator.TASK> { BaseSimulator.TASK.DENSITY, BaseSimulator.TASK.POI, BaseSimulator.TASK.ANGLE };
     public bool doneDoublePress = false;
+    public string save_suffix = "_vr"; 
 
     [Header("Setup")]
     public ConfidenceMenu confidenceMenu;
@@ -75,7 +76,7 @@ public class ExperimentHandler : MonoBehaviour
         int taskIndex = 0;
         if((participantNumber/2) % 2 == 1 )
         {
-            //Every two participants, reverse task order (only works when there are two tasks)
+            //Every two participants, reverse task order (only works when there are only two tasks)
             tasks.Reverse();
         }
 
@@ -234,7 +235,7 @@ public class ExperimentHandler : MonoBehaviour
         int taskIndex = i / trajVizCombos[0].Count;
         currTask = tasks[taskIndex];
 
-        int trajVizIndex = i % trajVizCombos.Count;
+        int trajVizIndex = i % trajVizCombos[taskIndex].Count;
         currVisualization = trajVizCombos[taskIndex][trajVizIndex].Item1;
         currTrajectory = trajVizCombos[taskIndex][trajVizIndex].Item2;
     }
@@ -245,10 +246,10 @@ public class ExperimentHandler : MonoBehaviour
         System.DateTime time = System.DateTime.Now;
         string filePath;
         if (intermediate)
-            filePath = Application.dataPath + "/Data/Intermediate/" + "trialData_Part_" + participantNumber + "_group_" + VizName(visualization) + "_" + time.Year + "-" + time.Month + "-" + time.Day + "_" +  time.Hour + "_" + time.Minute + "_" + time.Second +  ".csv";
+            filePath = Application.dataPath + "/Data/Intermediate/" + "trialData_Part_" + participantNumber + "_group_" + VizName(visualization) + save_suffix + "_" + time.Year + "-" + time.Month + "-" + time.Day + "_" +  time.Hour + "_" + time.Minute + "_" + time.Second +  ".csv";
         else
         {
-            filePath = Application.dataPath + "/Data/" + "trialData_Part_" + participantNumber + "_group_" + VizName(visualization) + ".csv";
+            filePath = Application.dataPath + "/Data/" + "trialData_Part_" + participantNumber + "_group_" + VizName(visualization) + save_suffix + ".csv";
         }
 
         StreamWriter writer = new StreamWriter(filePath);

@@ -1,0 +1,3 @@
+trial, task, trajectory, viz, time, confidence, offset, posx, posy, posz, anglex, angley, anglez
+0, density, catheter1, trail, 4.662614, 5, 0.336854, -0.006521911, 0.9102856, -0.523789, 
+1, density, catheter2, none, 4.857857, 5, 0.04990555, 0.005921614, 0.8638436, -0.7860907, 

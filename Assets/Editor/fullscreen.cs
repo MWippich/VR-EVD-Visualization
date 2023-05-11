@@ -45,7 +45,7 @@ public static class FullscreenGameView
     private static readonly object falseObject = false; // Only box once. This is a matter of principle.
     private static EditorWindow _instance;
 
-    private static readonly bool fullscreen = false;
+    private static readonly bool fullscreen = true;
 
     static FullscreenGameView()
     {

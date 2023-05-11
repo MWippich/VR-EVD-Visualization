@@ -1,0 +1,8 @@
+trial, task, trajectory, viz, time, confidence, offset, posx, posy, posz, anglex, angley, anglez
+0, density, catheter1, trail, 115.8771, 3, 0.003348261, 0.01520927, 0.828159, -0.8464127, 
+1, density, catheter2, none, 81.86949, 4, 0.001469722, 0.01481999, 0.832645, -0.8238313, 
+2, density, catheter1, trail, 49.98674, 4, 0.00165697, 0.01621774, 0.8269446, -0.8480622, 
+3, density, catheter2, none, 34.56131, 5, 0.0005894072, 0.01568114, 0.832839, -0.8241372, 
+4, density, catheter1, trail, 77.9913, 4, 0.002224514, 0.01667185, 0.8263862, -0.8477834, 
+5, density, catheter2, none, 46.77988, 4, 0.0005706839, 0.01565586, 0.8330497, -0.8238727, 
+6, poi, catheter4, trail, 82.44305, 5, 0.0005331555, 0.01892089, 0.827744, -0.8186494, 

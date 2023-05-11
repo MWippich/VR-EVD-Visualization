@@ -64,6 +64,23 @@ public class BaseSimulator : MonoBehaviour
 
         }
 
+        public void setPOIGT(string trajectory, Vector3 pos)
+        {
+            int i = trajectories.IndexOf(trajectory);
+            if (i != -1)
+            {
+                POIGT[i] = pos;
+            }
+            else
+            {
+                trajectories.Add(trajectory);
+                densityGT.Add(Vector3.zero);
+                angleGT.Add(Vector3.zero);
+                POIGT.Add(pos);
+            }
+
+        }
+
         public void setAngleGT(string trajectory, Vector3 angle)
         {
             int i = trajectories.IndexOf(trajectory);
@@ -208,7 +225,7 @@ public class BaseSimulator : MonoBehaviour
     [Header("Reference Markers Prefab")]
     public GameObject markers;
     public Transform skullPosition;
-    public Transform world;
+    public Transform world, burrHoleTrans;
 
     [Header("GUI")]
 
@@ -227,7 +244,7 @@ public class BaseSimulator : MonoBehaviour
     [Header("Experiment")]
     public bool showGroundTruth;
     public TASK task = TASK.DENSITY;
-    public GameObject groundTruthMarker, angleGroundTruthMarker;
+    public GameObject groundTruthMarker, angleGroundTruthMarker, poiGTMarker;
 
     [Header("Visualization")]
     public bool applyWarpData = true;
@@ -336,8 +353,9 @@ public class BaseSimulator : MonoBehaviour
     public void StartSimulation(String[] paths, TASK task, VIZ visualization)
     {
 
-        groundTruthMarker.SetActive(showGroundTruth && task != TASK.ANGLE);
+        groundTruthMarker.SetActive(showGroundTruth && task == TASK.DENSITY);
         angleGroundTruthMarker.SetActive(showGroundTruth && task == TASK.ANGLE);
+        poiGTMarker.SetActive(showGroundTruth && task == TASK.POI);
 
         if (debugTrajectoryPath != null)
         {
@@ -348,12 +366,9 @@ public class BaseSimulator : MonoBehaviour
             debugFrameNmbr.text = "Frame: 0/0";
             
         }
-        applyPathTrace = false;
-        applySpaceTimeDensity = false;
-        if(visualization == VIZ.TRAIL)
-            applyPathTrace = true;
-        else if(visualization == VIZ.DENSITY)
-            applySpaceTimeDensity = true;
+        applyPathTrace = visualization == VIZ.TRAIL;
+            
+        applySpaceTimeDensity = visualization == VIZ.DENSITY;
 
         this.task = task;
 
@@ -376,6 +391,7 @@ public class BaseSimulator : MonoBehaviour
         this.paths = paths;
 
         paused = false;
+        rewind = false;
 
         timeToCall = timeDelay;
 
@@ -390,6 +406,7 @@ public class BaseSimulator : MonoBehaviour
         foreach (Data data in dataList)
         {
             findTrueTip(data);
+            data.lineRenderer.enabled = applyPathTrace;
         }
         findMinMax(dataList);
 
@@ -431,6 +448,20 @@ public class BaseSimulator : MonoBehaviour
                 {
                     angleGroundTruthMarker.transform.position = anglePosition;
                     angleGroundTruthMarker.transform.rotation = Quaternion.FromToRotation(Vector3.up, data.tipAngleRot);
+                }
+
+
+                if (!groundTruth.hasPOIGT(data.path) || overrideGT)
+                {
+                    Vector3 poi = findPointOfInterest(data);
+                    groundTruth.setPOIGT(data.path, poi);
+                    poiGTMarker.transform.position = poi;
+
+                }
+                else
+                {
+                    Vector3 poiGT = groundTruth.getPOIGT(data.path);
+                    poiGTMarker.transform.position = poiGT;
                 }
 
                 groundTruth.save();
@@ -697,6 +728,26 @@ public class BaseSimulator : MonoBehaviour
         groundTruthMarker.transform.position = highestDensityPoses[0];
         data.tipHighestDensityPos = highestDensityPoses[0];
 
+    }
+
+    private Vector3 findPointOfInterest(Data data)
+    {
+        Vector3 burrHolePos = burrHoleTrans.position;
+        Vector3 poi = Vector3.zero;
+
+        float maxDist = 0f;
+
+        foreach (Vector3 point in data.modelTip)
+        {
+            float dist = (burrHolePos - point).sqrMagnitude;
+            if (dist > maxDist)
+            {
+                maxDist = dist;
+                poi = point;
+            }
+        }
+
+        return poi;
     }
 
     private Vector3 findAngle(Data data, int index)
